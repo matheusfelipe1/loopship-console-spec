@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qa-mobile-agent:schema:implementation-report:1",
+  "title": "Implementation Report",
+  "description": "Audit log written by the feature-implementer skill. Source for the pull request body and for the web console run view.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "issue", "branch", "started_at", "cycles", "final_status"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "issue": { "type": "string" },
+    "branch": { "type": "string" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "plan_path": { "type": "string" },
+    "cycles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cycle", "verdict", "files_changed", "duration_seconds"],
+        "properties": {
+          "cycle": { "type": "integer", "minimum": 1 },
+          "commit": { "type": "string" },
+          "verdict": { "enum": ["GO", "GO_WITH_CAVEATS", "NO_GO", "ENVIRONMENT_FAILURE"] },
+          "bugs_fixed": { "type": "array", "items": { "type": "string" } },
+          "bugs_open": { "type": "array", "items": { "type": "string" } },
+          "files_changed": { "type": "integer", "minimum": 0 },
+          "duration_seconds": { "type": "integer", "minimum": 0 },
+          "verdict_path": { "type": "string" }
+        }
+      }
+    },
+    "final_status": { "enum": ["pr_opened", "go_no_pr", "escalated", "failed_environment", "cancelled"] },
+    "pr_url": { "type": "string", "format": "uri" },
+    "escalation_reason": {
+      "enum": ["max_cycles_reached", "same_bug_repeated", "ambiguous_acceptance_criteria", "out_of_scope_change_required", "guardrail_violation_blocked", "other"]
+    },
+    "disagreements": {
+      "type": "array",
+      "description": "Bugs the implementer disputes. They are never dropped; a human decides.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bug_id", "rationale"],
+        "properties": { "bug_id": { "type": "string" }, "rationale": { "type": "string" } }
+      }
+    }
+  }
+}

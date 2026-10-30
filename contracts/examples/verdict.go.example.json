@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "issue": "PROJ-123",
+  "cycle": 2,
+  "generated_at": "2026-10-29T16:05:00Z",
+  "verdict": "GO_WITH_CAVEATS",
+  "verdict_reasons": [
+    "All acceptance criteria passed.",
+    "Regression passed on all critical flows.",
+    "One low-severity design divergence remains (BUG-02)."
+  ],
+  "environment": {
+    "platform": "android",
+    "target": "emulator",
+    "device": "Pixel_8_API_35",
+    "os_version": "15",
+    "app_version": "1.8.0-debug",
+    "build_id": "e4f5a6b"
+  },
+  "criteria": [
+    { "id": "AC-1", "status": "pass" },
+    { "id": "AC-2", "status": "pass" }
+  ],
+  "bugs": [
+    {
+      "id": "BUG-02",
+      "fingerprint": "sha1:77be10aa",
+      "severity": "low",
+      "title": "Continue button corner radius differs from the design",
+      "steps": ["Open Sign up", "Compare the Continue button with the Figma frame"],
+      "expected": "Radius 12 px.",
+      "actual": "Radius 8 px.",
+      "regression": false,
+      "evidence": ["design/signup_figma-vs-real.png"]
+    }
+  ],
+  "regression": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "flows": [
+      { "name": "login", "critical": true, "status": "pass" },
+      { "name": "home-navigation", "critical": true, "status": "pass" },
+      { "name": "logout", "critical": false, "status": "pass" }
+    ]
+  }
+}

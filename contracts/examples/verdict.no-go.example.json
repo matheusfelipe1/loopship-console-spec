@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "issue": "PROJ-123",
+  "cycle": 1,
+  "generated_at": "2026-10-29T15:20:00Z",
+  "verdict": "NO_GO",
+  "verdict_reasons": [
+    "Blocking bug BUG-01: app crashes when the e-mail field is empty.",
+    "Acceptance criterion AC-2 failed."
+  ],
+  "environment": {
+    "platform": "android",
+    "target": "emulator",
+    "device": "Pixel_8_API_35",
+    "os_version": "15",
+    "app_version": "1.8.0-debug",
+    "build_id": "a1b2c3d"
+  },
+  "criteria": [
+    { "id": "AC-1", "text": "A user can create an account with a valid e-mail and password.", "status": "pass", "evidence": ["flows/signup/step-09.png"] },
+    { "id": "AC-2", "text": "An empty or invalid e-mail shows an inline error and does not submit.", "status": "fail", "bug_ids": ["BUG-01"], "evidence": ["bugs/BUG-01/step-04.png"] }
+  ],
+  "bugs": [
+    {
+      "id": "BUG-01",
+      "fingerprint": "sha1:3f2a9c0d",
+      "severity": "blocking",
+      "title": "App crashes when submitting the sign-up form with an empty e-mail",
+      "steps": ["Open Sign up", "Leave the e-mail field empty", "Tap Continue"],
+      "expected": "Inline error under the e-mail field (Figma node 12:40).",
+      "actual": "The app closes immediately.",
+      "criterion_ids": ["AC-2"],
+      "regression": false,
+      "flow": "signup",
+      "evidence": ["bugs/BUG-01/step-04.png", "bugs/BUG-01/clip.mp4"],
+      "log": "bugs/BUG-01/logcat.txt"
+    },
+    {
+      "id": "BUG-02",
+      "fingerprint": "sha1:77be10aa",
+      "severity": "low",
+      "title": "Continue button corner radius differs from the design",
+      "steps": ["Open Sign up", "Compare the Continue button with the Figma frame"],
+      "expected": "Radius 12 px.",
+      "actual": "Radius 8 px.",
+      "criterion_ids": [],
+      "regression": false,
+      "evidence": ["design/signup_figma-vs-real.png"]
+    }
+  ],
+  "regression": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "flows": [
+      { "name": "login", "critical": true, "status": "pass", "video": "flows/login/clip.mp4" },
+      { "name": "home-navigation", "critical": true, "status": "pass" },
+      { "name": "logout", "critical": false, "status": "pass" }
+    ]
+  },
+  "design_comparison": [
+    {
+      "screen": "Sign up",
+      "figma_node": "12:40",
+      "status": "minor_divergence",
+      "divergences": ["Button corner radius 8 px vs 12 px"],
+      "side_by_side": "design/signup_figma-vs-real.png"
+    }
+  ],
+  "evidence_dir": "./qa-reports/PROJ-123/cycle-1"
+}

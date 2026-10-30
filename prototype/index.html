@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Loopship Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: dark developer console. Left rail, run header with budgets, three-column live run (activity | device mirror | findings). */
+:root {
+  --bg: #0A0C10; --s1: #10131A; --s2: #161A23; --s3: #1D2230;
+  --bd: #262C3B; --bd2: #343C50;
+  --tx: #E7EAF3; --tx2: #A3ACC2; --tx3: #7A84A0;
+  --ac: #7C6CFF; --ac-strong: #6F5CF6; --ac2: #34D5C4;
+  --ok: #3DD68C; --warn: #F6B84A; --bad: #FF5F6D; --info: #5EA9FF;
+  --f-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { background: var(--bg); color: var(--tx); font: 400 14px/22px var(--f-ui); margin: 0; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--ac); }
+:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; border-radius: 6px; }
+.ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.mono { font-family: var(--f-mono); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* shell */
+.app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+.side { background: var(--s1); border-right: 1px solid var(--bd); padding: 16px 12px 16px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+.brand .ic { width: 24px; height: 24px; color: var(--ac); stroke-width: 1.8; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav a, .nav button.navbtn { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--tx2); text-decoration: none; background: none; border: 0; text-align: left; width: 100%; }
+.nav a:hover, .nav button.navbtn:hover { background: var(--s3); color: var(--tx); }
+.nav a[aria-current="page"] { background: var(--s3); color: var(--tx); }
+.nav a[aria-current="page"] .ic { color: var(--ac); }
+.nav .soon { margin-left: auto; font-size: 11px; color: var(--tx3); }
+.org { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--bd); border-radius: 10px; background: var(--s2); }
+.avatar { width: 28px; height: 28px; border-radius: 8px; background: var(--s3); border: 1px solid var(--bd2); display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--ac2); }
+.org small { display: block; color: var(--tx3); font-size: 12px; line-height: 16px; }
+
+.main { min-width: 0; padding: 0 max(24px, env(safe-area-inset-right, 0px)) 48px 24px; }
+.top { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--bd); flex-wrap: wrap; }
+.crumb { color: var(--tx2); display: flex; align-items: center; gap: 8px; min-width: 0; }
+.crumb b { color: var(--tx); font-weight: 500; }
+.chip-proj { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid var(--bd); border-radius: 999px; background: var(--s2); color: var(--tx2); font-size: 12px; line-height: 20px; }
+.spacer { flex: 1 1 auto; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--bd2); background: var(--s2); color: var(--tx); font-weight: 500; }
+.btn:hover { background: var(--s3); border-color: #44506b; }
+.btn.primary { background: var(--ac-strong); border-color: var(--ac-strong); color: #fff; }
+.btn.primary:hover { background: #7A68FF; border-color: #7A68FF; }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--tx2); }
+.btn.ghost:hover { background: var(--s3); color: var(--tx); }
+.btn.danger { color: var(--bad); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn.sm { min-height: 30px; padding: 3px 10px; font-size: 13px; }
+kbd { font: 500 11px/16px var(--f-mono); padding: 0 6px; border: 1px solid var(--bd2); border-bottom-width: 2px; border-radius: 5px; color: var(--tx2); background: var(--s1); }
+
+h1 { font-size: 28px; line-height: 34px; margin: 0; letter-spacing: -.02em; font-weight: 600; }
+h2 { font-size: 16px; line-height: 24px; margin: 0; font-weight: 600; }
+.sub { color: var(--tx2); margin: 4px 0 0; }
+.pagehead { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 28px 0 20px; }
+
+/* chips */
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; min-height: 22px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; }
+.chip .ic { width: 12px; height: 12px; }
+.chip.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--s2)); border-color: color-mix(in srgb, var(--ok) 28%, transparent); }
+.chip.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, var(--s2)); border-color: color-mix(in srgb, var(--warn) 28%, transparent); }
+.chip.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--s2)); border-color: color-mix(in srgb, var(--bad) 28%, transparent); }
+.chip.run { color: var(--ac2); background: color-mix(in srgb, var(--ac2) 12%, var(--s2)); border-color: color-mix(in srgb, var(--ac2) 28%, transparent); }
+.chip.mute { color: var(--tx2); background: var(--s3); border-color: var(--bd); }
+.chip.info { color: var(--info); background: color-mix(in srgb, var(--info) 12%, var(--s2)); border-color: color-mix(in srgb, var(--info) 28%, transparent); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.chip.run .dot { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* composer */
+.panel { background: var(--s1); border: 1px solid var(--bd); border-radius: 12px; }
+.composer { padding: 20px; display: grid; gap: 16px; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > label, .lbl { font-size: 12px; font-weight: 500; color: var(--tx2); letter-spacing: .02em; text-transform: uppercase; }
+.inp { width: 100%; min-height: 40px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bd2); background: var(--s2); color: var(--tx); font-family: var(--f-mono); font-size: 13px; }
+.inp:hover { border-color: #44506b; }
+select.inp { font-family: var(--f-ui); font-size: 14px; }
+.inp[aria-invalid="true"] { border-color: var(--bad); }
+.detect { display: flex; align-items: center; gap: 8px; min-height: 22px; font-size: 12px; color: var(--tx2); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--s2); border: 1px solid var(--bd); }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; }
+.seg span { display: block; padding: 5px 12px; border-radius: 7px; color: var(--tx2); font-weight: 500; font-size: 13px; cursor: pointer; }
+.seg input:checked + span { background: var(--s3); color: var(--tx); box-shadow: inset 0 0 0 1px var(--bd2); }
+.seg input:focus-visible + span { outline: 2px solid var(--ac); outline-offset: 1px; }
+.seg input:disabled + span { opacity: .45; cursor: not-allowed; }
+details.lim summary { cursor: pointer; color: var(--tx2); font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+details.lim .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.err { color: var(--bad); font-size: 13px; min-height: 20px; }
+.runbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.note { color: var(--tx3); font-size: 12px; }
+
+/* table */
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 760px; }
+th { position: sticky; top: 0; text-align: left; font-size: 12px; font-weight: 500; color: var(--tx3); text-transform: uppercase; letter-spacing: .04em; padding: 10px 14px; border-bottom: 1px solid var(--bd); background: var(--s1); }
+td { padding: 12px 14px; border-bottom: 1px solid var(--bd); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.live { background: color-mix(in srgb, var(--ac2) 6%, var(--s1)); }
+td .key { font-family: var(--f-mono); font-size: 12px; color: var(--tx2); }
+td .ttl { font-weight: 500; }
+.rowlink { background: none; border: 0; padding: 0; text-align: left; color: var(--tx); font-weight: 500; text-decoration: underline; text-decoration-color: var(--bd2); text-underline-offset: 3px; }
+.rowlink:hover { text-decoration-color: var(--ac); }
+.num { font-variant-numeric: tabular-nums; font-family: var(--f-mono); font-size: 13px; color: var(--tx2); }
+
+/* run header */
+.runhead { padding: 20px 0 12px; display: grid; gap: 14px; }
+.rh1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rh1 .key { font-family: var(--f-mono); font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--s3); border: 1px solid var(--bd); color: var(--tx2); }
+.rh1 h1 { font-size: 22px; line-height: 28px; }
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.meter { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 10px; background: var(--s1); }
+.meter .mt { display: flex; justify-content: space-between; font-size: 12px; color: var(--tx2); }
+.meter .mt b { font-family: var(--f-mono); font-weight: 500; color: var(--tx); font-variant-numeric: tabular-nums; }
+.bar { height: 4px; border-radius: 4px; background: var(--s3); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ac); border-radius: 4px; transition: width .2s ease-out; }
+.ctrls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+
+/* stepper */
+.stepper { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 4px 2px 8px; list-style: none; margin: 0; }
+.stepper li { display: flex; align-items: center; gap: 8px; color: var(--tx3); white-space: nowrap; font-size: 13px; }
+.stepper li + li::before { content: ""; width: 28px; height: 1px; background: var(--bd2); margin: 0 10px; }
+.stepper .n { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--bd2); display: grid; place-items: center; font-size: 11px; font-family: var(--f-mono); }
+.stepper .done { color: var(--tx2); }
+.stepper .done .n { background: color-mix(in srgb, var(--ok) 16%, var(--s2)); border-color: color-mix(in srgb, var(--ok) 40%, transparent); color: var(--ok); }
+.stepper .act { color: var(--tx); font-weight: 500; }
+.stepper .act .n { background: var(--ac-strong); border-color: var(--ac-strong); color: #fff; }
+.cyc { margin-left: 12px; }
+
+/* 3 columns */
+.cols { display: grid; grid-template-columns: minmax(280px, 340px) minmax(340px, 1fr) minmax(320px, 400px); gap: 16px; align-items: start; }
+.col { min-width: 0; }
+.ph { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--bd); }
+.ph h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--tx2); font-weight: 500; }
+.ph .grow { flex: 1; }
+.chk { display: inline-flex; align-items: center; gap: 6px; color: var(--tx2); font-size: 12px; }
+
+.activity { list-style: none; margin: 0; padding: 6px 0; height: clamp(480px, 74vh, 720px); overflow-y: auto; }
+.ev { display: grid; grid-template-columns: 44px 18px minmax(0, 1fr); gap: 8px; padding: 8px 14px; align-items: start; }
+.ev time { font: 400 11px/22px var(--f-mono); color: var(--tx3); font-variant-numeric: tabular-nums; }
+.ev .eic { margin-top: 3px; width: 16px; height: 16px; }
+.ev b { font-weight: 500; display: block; }
+.ev p { margin: 0; color: var(--tx2); font-size: 13px; line-height: 18px; }
+.ev.step .eic { color: var(--ac); }
+.ev.ok .eic { color: var(--ok); }
+.ev.bad .eic { color: var(--bad); }
+.ev.bad b { color: #FF8A94; }
+.ev.warn .eic { color: var(--warn); }
+.ev.info .eic { color: var(--tx3); }
+.lg { padding: 0 14px 0 70px; font: 400 12px/18px var(--f-mono); color: var(--tx3); word-break: break-word; }
+
+/* mirror */
+.mirror { display: grid; justify-items: center; gap: 12px; padding: 16px 14px 18px; }
+.mtabs { display: flex; gap: 12px; align-items: center; width: 100%; justify-content: space-between; flex-wrap: wrap; }
+.stage { display: flex; gap: 8px; justify-content: center; align-items: flex-start; width: 100%; min-height: 560px; }
+.pw { width: calc(272px * var(--sc, 1)); height: calc(560px * var(--sc, 1)); flex: none; }
+.phone { width: 272px; height: 560px; border-radius: 38px; background: #040507; border: 1px solid var(--bd2); padding: 10px; position: relative; transform: scale(var(--sc, 1)); transform-origin: top left; box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+.phone .screen { position: relative; width: 252px; height: 540px; border-radius: 28px; overflow: hidden; background: #F7F8FC; color: #1B1C22; font-family: Roboto, system-ui, sans-serif; font-size: 13px; line-height: 18px; }
+.cam { position: absolute; top: 12px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #0b0c10; z-index: 5; }
+.pcap { text-align: center; font-size: 12px; color: var(--tx3); margin-top: 6px; }
+.stage.split { --sc: .74; }
+.cap { width: 100%; padding: 10px 12px; border-radius: 10px; background: var(--s2); border: 1px solid var(--bd); display: flex; gap: 10px; align-items: center; color: var(--tx2); font-size: 13px; min-height: 44px; }
+.cap .mono { color: var(--tx); font-size: 12px; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.tap { position: absolute; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 2px solid var(--ac); background: color-mix(in srgb, var(--ac) 30%, transparent); z-index: 9; pointer-events: none; animation: tap .8s ease-out forwards; }
+@keyframes tap { 0% { transform: scale(.4); opacity: 1; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
+
+/* app screens (rendered inside the mirror) */
+.scr { position: absolute; inset: 0; }
+.scr .a { position: absolute; left: 20px; right: 20px; }
+.scr h3 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -.01em; }
+.scr .mut { color: #5D6070; font-size: 12px; }
+.scr .lab { font-size: 11px; color: #3A3D4B; font-weight: 500; }
+.scr .box { height: 44px; border: 1px solid #B9BCCB; border-radius: 8px; padding: 0 12px; display: flex; align-items: center; background: #fff; font-size: 14px; }
+.scr .box.bad { border: 2px solid #B3261E; padding: 0 11px; }
+.scr .box .ph2 { color: #8A8D9C; }
+.scr .errt { color: #B3261E; font-size: 11px; line-height: 14px; }
+.scr .cta { height: 46px; background: #3558F0; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 14px; border-radius: var(--r, 8px); }
+.scr .cta.out { background: #fff; color: #3558F0; border: 1px solid #B9BCCB; }
+.scr .logo { left: 94px; width: 64px; height: 64px; right: auto; border-radius: 50%; background: #3558F0; color: #fff; display: grid; place-items: center; font-size: 28px; font-weight: 600; }
+.scr .center { text-align: center; }
+.scr .okc { left: 90px; right: auto; width: 72px; height: 72px; border-radius: 50%; background: #E3F6EB; display: grid; place-items: center; }
+.scr .okc svg { width: 36px; height: 36px; fill: none; stroke: #1E8E4E; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.scr.crash { background: #C9CBD4; }
+.scr .dlg { position: absolute; left: 22px; right: 22px; top: 190px; background: #fff; border-radius: 24px; padding: 22px 20px 12px; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+.scr .dlg h4 { margin: 0 0 8px; font-size: 16px; line-height: 22px; font-weight: 600; }
+.scr .dlg .acts { display: flex; flex-direction: column; margin-top: 12px; }
+.scr .dlg .acts span { padding: 10px 0; color: #3558F0; font-weight: 500; }
+.spec { position: absolute; z-index: 7; font: 500 10px/14px var(--f-mono); color: #fff; background: #E0407B; padding: 0 5px; border-radius: 4px; }
+.fig .cta { outline: 1px dashed #E0407B; outline-offset: 3px; }
+
+/* side tabs */
+.tabs { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--bd); overflow-x: auto; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 10px; color: var(--tx2); font-weight: 500; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border-radius: 6px 6px 0 0; }
+.tabs button[aria-selected="true"] { color: var(--tx); border-bottom-color: var(--ac); }
+.tabs button:hover { color: var(--tx); }
+.tabs .cnt { font: 500 11px/16px var(--f-mono); padding: 0 6px; border-radius: 999px; background: var(--s3); color: var(--tx2); }
+.tp { padding: 14px; display: grid; gap: 14px; min-height: 420px; align-content: start; max-height: 74vh; overflow-y: auto; }
+.tp[hidden] { display: none; }
+.banner { display: grid; gap: 6px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--bd); background: var(--s2); }
+.banner .bt { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.banner ul { margin: 0; padding-left: 18px; color: var(--tx2); font-size: 13px; line-height: 20px; }
+.banner.bad { border-color: color-mix(in srgb, var(--bad) 45%, transparent); background: color-mix(in srgb, var(--bad) 9%, var(--s2)); }
+.banner.bad .bt { color: var(--bad); }
+.banner.warn { border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: color-mix(in srgb, var(--warn) 9%, var(--s2)); }
+.banner.warn .bt { color: var(--warn); }
+.banner.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 9%, var(--s2)); }
+.banner.ok .bt { color: var(--ok); }
+.empty { color: var(--tx3); padding: 18px 4px; font-size: 13px; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.crit { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 10px; background: var(--s2); }
+.crit .id { font: 500 11px/20px var(--f-mono); color: var(--tx2); }
+.crit p { margin: 0; font-size: 13px; line-height: 20px; }
+.bug { border: 1px solid var(--bd); border-radius: 10px; background: var(--s2); overflow: hidden; }
+.bug summary { list-style: none; cursor: pointer; padding: 10px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+.bug summary::-webkit-details-marker { display: none; }
+.bug .bd { padding: 0 12px 12px; display: grid; gap: 8px; font-size: 13px; line-height: 20px; color: var(--tx2); }
+.bug .bd h5 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--tx3); font-weight: 500; }
+.bug .bd ol { margin: 0; padding-left: 18px; }
+.bug .bd code { font-family: var(--f-mono); font-size: 12px; color: var(--tx); }
+.sev { font: 500 11px/20px var(--f-mono); text-transform: uppercase; letter-spacing: .03em; }
+.sev.blocking { color: var(--bad); } .sev.low { color: var(--info); } .sev.high { color: var(--warn); } .sev.medium { color: var(--warn); }
+.mini { width: 100%; border-collapse: collapse; min-width: 0; }
+.mini th, .mini td { padding: 7px 8px; font-size: 13px; background: none; position: static; text-transform: none; letter-spacing: 0; color: var(--tx2); font-weight: 400; }
+.mini th { color: var(--tx3); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; font-weight: 500; }
+.mini td:first-child { color: var(--tx); }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.thumbs figure { margin: 0; display: grid; gap: 6px; justify-items: center; font-size: 11px; color: var(--tx3); text-align: center; }
+.thumb { width: 84px; height: 180px; border-radius: 10px; overflow: hidden; border: 1px solid var(--bd2); position: relative; background: #F7F8FC; }
+.thumb .screen { position: absolute; left: 0; top: 0; width: 252px; height: 540px; transform: scale(.3333); transform-origin: top left; overflow: hidden; background: #F7F8FC; color: #1B1C22; font-family: Roboto, system-ui, sans-serif; font-size: 13px; line-height: 18px; }
+.tile { width: 84px; height: 180px; border-radius: 10px; border: 1px dashed var(--bd2); display: grid; place-items: center; background: var(--s2); color: var(--tx2); }
+.tile .ic { width: 22px; height: 22px; }
+.cmp { display: grid; justify-items: center; gap: 10px; }
+.cmpbox { position: relative; width: 220px; height: 472px; border-radius: 16px; overflow: hidden; border: 1px solid var(--bd2); }
+.cmpbox .layer { position: absolute; left: 0; top: 0; width: 252px; height: 540px; transform: scale(.873); transform-origin: top left; overflow: hidden; background: #F7F8FC; color: #1B1C22; font-family: Roboto, system-ui, sans-serif; font-size: 13px; line-height: 18px; }
+.cmpbox .top { clip-path: inset(0 calc(100% - var(--pos, 50%)) 0 0); }
+.cmpbox .hnd { position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; background: var(--ac2); z-index: 20; }
+.cmpl { display: flex; justify-content: space-between; width: 220px; font-size: 11px; color: var(--tx3); }
+input[type="range"] { width: 220px; accent-color: var(--ac); }
+.divs { margin: 0; padding-left: 18px; color: var(--tx2); font-size: 13px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.pr { display: inline-flex; align-items: center; gap: 8px; }
+
+/* overlays */
+dialog { background: var(--s1); color: var(--tx); border: 1px solid var(--bd2); border-radius: 14px; padding: 0; width: min(520px, calc(100vw - 32px)); box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+dialog::backdrop { background: rgba(4, 5, 8, .66); }
+.dh { padding: 18px 20px 4px; }
+.db { padding: 8px 20px 16px; display: grid; gap: 12px; color: var(--tx2); }
+.df { padding: 12px 20px 18px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+#cmdk { width: min(560px, calc(100vw - 32px)); margin-top: 12vh; }
+#cmdk input { width: 100%; border: 0; border-bottom: 1px solid var(--bd); background: transparent; padding: 14px 18px; font-size: 15px; }
+#cmdk input:focus { outline: none; }
+#cmdk ul { list-style: none; margin: 0; padding: 6px; max-height: 320px; overflow-y: auto; }
+#cmdk li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; color: var(--tx2); cursor: pointer; }
+#cmdk li[aria-selected="true"] { background: var(--s3); color: var(--tx); }
+#cmdk li small { margin-left: auto; color: var(--tx3); }
+.toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--s3); border: 1px solid var(--bd2); padding: 10px 14px; border-radius: 10px; z-index: 50; max-width: calc(100vw - 32px); }
+.toast[hidden] { display: none; }
+
+@media (max-width: 1180px) {
+  .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .col.side3 { grid-column: 1 / -1; }
+  .activity { height: clamp(360px, 60vh, 560px); }
+}
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; flex-direction: row; align-items: center; padding: 8px 8px 8px max(16px, env(safe-area-inset-left, 0px)); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--bd); gap: 8px; }
+  .brand { padding: 0 8px 0 0; }
+  .nav { flex-direction: row; }
+  .nav a { white-space: nowrap; }
+  .org { display: none; }
+  .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .fields, details.lim .fields { grid-template-columns: minmax(0, 1fr); }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .tp { max-height: none; }
+  .ctrls { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4h-4"/><path d="M10 9l5 3-5 3z"/></symbol>
+    <symbol id="i-runs" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+    <symbol id="i-proj" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6M7 8h10v4a5 5 0 0 1-10 0zM12 17v5"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></symbol>
+    <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-bug" viewBox="0 0 24 24"><rect x="8" y="7" width="8" height="12" rx="4"/><path d="M12 7V4M8 11H4M16 11h4M8 16H5M16 16h3M9 4l1 2M15 4l-1 2"/></symbol>
+    <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-9 9"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 5-12 2-12 7"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="side" aria-label="Primary">
+    <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-logo"/></svg><span>Loopship</span></div>
+    <nav class="nav" aria-label="Sections">
+      <a href="#runs" id="navRuns" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-runs"/></svg>Runs</a>
+      <a href="#projects" data-stub="Projects"><svg class="ic" aria-hidden="true"><use href="#i-proj"/></svg>Projects</a>
+      <a href="#runners" data-stub="Runners"><svg class="ic" aria-hidden="true"><use href="#i-cpu"/></svg>Runners</a>
+      <a href="#integrations" data-stub="Integrations"><svg class="ic" aria-hidden="true"><use href="#i-plug"/></svg>Integrations</a>
+      <a href="#usage" data-stub="Usage"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Usage</a>
+      <a href="#settings" data-stub="Settings"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>Settings</a>
+    </nav>
+    <div class="org"><span class="avatar" aria-hidden="true">AM</span><span>Acme Mobile<small>Team plan (example)</small></span></div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="crumb" id="crumb"><span>Runs</span></div>
+      <span class="chip-proj"><svg class="ic" aria-hidden="true"><use href="#i-branch"/></svg>acme-app · main</span>
+      <span class="spacer"></span>
+      <button class="btn sm" id="openCmd" type="button"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>Search or jump <kbd>Ctrl K</kbd></button>
+      <button class="btn primary sm" id="newRunTop" type="button"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>New run</button>
+    </header>
+
+    <!-- HOME -->
+    <main id="viewHome">
+      <div class="pagehead">
+        <div>
+          <h1>Runs</h1>
+          <p class="sub">Paste a task and a design. Loopship implements it, tests it on a device, and opens a pull request for you to review.</p>
+        </div>
+      </div>
+
+      <section class="panel composer" aria-labelledby="nrh">
+        <h2 id="nrh">New run</h2>
+        <div class="fields">
+          <div class="field">
+            <label for="taskUrl">Task link</label>
+            <input class="inp" id="taskUrl" type="url" value="https://acme.atlassian.net/browse/PROJ-123" autocomplete="off" spellcheck="false" aria-describedby="taskDetect">
+            <div class="detect" id="taskDetect" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label for="designUrl">Design link</label>
+            <input class="inp" id="designUrl" type="url" value="https://www.figma.com/design/EXAMPLEKEY/Signup?node-id=12-40" autocomplete="off" spellcheck="false" aria-describedby="designDetect">
+            <div class="detect" id="designDetect" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label for="project">Project</label>
+            <select class="inp" id="project"><option>acme-app (main)</option><option>acme-app-lite (main)</option></select>
+          </div>
+          <div class="field">
+            <span class="lbl" id="platLbl">Platform</span>
+            <div class="seg" role="radiogroup" aria-labelledby="platLbl">
+              <label><input type="radio" name="plat" value="android" checked><span>Android · emulator</span></label>
+              <label title="Hosted iOS runners are planned for v1.2"><input type="radio" name="plat" value="ios" disabled><span>iOS · soon</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <span class="lbl" id="modeLbl">Mode</span>
+            <div class="seg" role="radiogroup" aria-labelledby="modeLbl">
+              <label><input type="radio" name="mode" value="impl" checked><span>Implement and validate</span></label>
+              <label><input type="radio" name="mode" value="val"><span>Validate only</span></label>
+            </div>
+          </div>
+        </div>
+        <details class="lim">
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Limits</summary>
+          <div class="fields">
+            <div class="field"><label for="limCyc">Max cycles</label><input class="inp" id="limCyc" type="number" min="1" max="5" value="3"></div>
+            <div class="field"><label for="limMin">Max minutes</label><input class="inp" id="limMin" type="number" min="10" max="240" value="90"></div>
+            <div class="field"><label for="limUsd">Max spend (USD)</label><input class="inp" id="limUsd" type="number" min="1" max="100" value="15"></div>
+          </div>
+        </details>
+        <div class="err" id="formErr" role="alert"></div>
+        <div class="runbar">
+          <button class="btn primary" id="runBtn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Run <kbd>Ctrl Enter</kbd></button>
+          <span class="note">Prototype: this plays a scripted example. The data shown is fictional.</span>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:24px" aria-labelledby="rh2">
+        <div class="ph"><h2 id="rh2">Recent runs</h2></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th scope="col">Task</th><th scope="col">Project</th><th scope="col">Status</th><th scope="col">Cycles</th><th scope="col">Verdict</th><th scope="col">Duration</th><th scope="col">Cost</th><th scope="col">Started</th></tr></thead>
+            <tbody id="runRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- RUN -->
+    <main id="viewRun" hidden>
+      <div class="runhead">
+        <div class="rh1">
+          <span class="key" id="rKey">PROJ-123</span>
+          <h1>Sign-up form: inline validation</h1>
+          <span id="rStatus"></span>
+          <div class="ctrls">
+            <span class="note" id="speedLbl">Speed</span>
+            <div class="seg" role="radiogroup" aria-labelledby="speedLbl">
+              <label><input type="radio" name="spd" value="1" checked><span>1x</span></label>
+              <label><input type="radio" name="spd" value="2"><span>2x</span></label>
+              <label><input type="radio" name="spd" value="4"><span>4x</span></label>
+            </div>
+            <button class="btn sm danger" id="cancelBtn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-stop"/></svg>Cancel</button>
+            <button class="btn sm" id="resetBtn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-reset"/></svg>Reset demo</button>
+          </div>
+        </div>
+        <div class="meters" id="meters"></div>
+        <ol class="stepper" id="stepper" aria-label="Pipeline"></ol>
+      </div>
+
+      <div class="cols">
+        <section class="panel col" aria-labelledby="actH">
+          <div class="ph"><h2 id="actH">Activity</h2><span class="grow"></span><label class="chk"><input type="checkbox" id="follow" checked> Follow</label></div>
+          <ol class="activity" id="activity" role="log" aria-live="polite" aria-relevant="additions" tabindex="0" aria-label="Run activity"></ol>
+        </section>
+
+        <section class="panel col" aria-labelledby="mirH">
+          <div class="ph"><h2 id="mirH">Device mirror</h2><span class="grow"></span>
+            <div class="seg" role="radiogroup" aria-label="Mirror view">
+              <label><input type="radio" name="mv" value="device" checked><span>Device</span></label>
+              <label><input type="radio" name="mv" value="fig"><span>Figma</span></label>
+              <label><input type="radio" name="mv" value="split"><span>Split</span></label>
+            </div>
+          </div>
+          <div class="mirror">
+            <div class="stage" id="stage"></div>
+            <div class="cap" id="caption" aria-live="polite"></div>
+            <div class="meta"><span class="chip mute mono">Pixel 8 · API 35 · emulator</span><span class="chip mute mono">mirror 2 fps · 480 ms (example)</span></div>
+          </div>
+        </section>
+
+        <section class="panel col side3" aria-label="Results">
+          <div class="tabs" role="tablist" aria-label="Results">
+            <button role="tab" id="tb-find" aria-controls="tp-find" aria-selected="true" type="button"><svg class="ic" aria-hidden="true"><use href="#i-bug"/></svg>Findings <span class="cnt" id="cntF">0</span></button>
+            <button role="tab" id="tb-design" aria-controls="tp-design" aria-selected="false" tabindex="-1" type="button"><svg class="ic" aria-hidden="true"><use href="#i-img"/></svg>Design</button>
+            <button role="tab" id="tb-evid" aria-controls="tp-evid" aria-selected="false" tabindex="-1" type="button"><svg class="ic" aria-hidden="true"><use href="#i-film"/></svg>Evidence <span class="cnt" id="cntE">0</span></button>
+            <button role="tab" id="tb-rep" aria-controls="tp-rep" aria-selected="false" tabindex="-1" type="button"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>Report</button>
+          </div>
+          <div class="tp" id="tp-find" role="tabpanel" aria-labelledby="tb-find"></div>
+          <div class="tp" id="tp-design" role="tabpanel" aria-labelledby="tb-design" hidden></div>
+          <div class="tp" id="tp-evid" role="tabpanel" aria-labelledby="tb-evid" hidden></div>
+          <div class="tp" id="tp-rep" role="tabpanel" aria-labelledby="tb-rep" hidden></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<dialog id="approveDlg" aria-labelledby="apT">
+  <div class="dh"><h2 id="apT">Open pull request?</h2></div>
+  <div class="db">
+    <p style="margin:0">Verdict <span class="chip warn"><svg class="ic" aria-hidden="true"><use href="#i-alert"/></svg>GO with caveats</span> after 2 of 3 cycles. One low-severity design divergence remains (BUG-02).</p>
+    <p style="margin:0">Branch <code class="mono" style="color:var(--tx)">feature/PROJ-123</code> into <code class="mono" style="color:var(--tx)">main</code>. Evidence stays in Loopship. Nothing is merged or deployed: you review and decide.</p>
+  </div>
+  <div class="df">
+    <button class="btn" id="apNo" type="button">Not now</button>
+    <button class="btn primary" id="apYes" type="button">Approve and open PR</button>
+  </div>
+</dialog>
+
+<dialog id="cmdk" aria-label="Command palette">
+  <input id="cmdInput" type="text" placeholder="Type a command" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="cmdList" aria-autocomplete="list">
+  <ul id="cmdList" role="listbox" aria-label="Commands"></ul>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ic = (n) => '<svg class="ic" aria-hidden="true"><use href="#i-' + n + '"></use></svg>';
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const STEPS = ['Read', 'Plan', 'Implement', 'Verify', 'Build', 'Validate', 'Decide', 'Deliver'];
+  const MAX = { cycles: 3, minutes: 90, cents: 1500 };
+  let S, token = 0, toastT;
+
+  function fresh() {
+    return { view: 'home', running: false, speed: 1, status: 'queued', step: -1, cycle: 0, elapsed: 0, cents: 0,
+      key: 'PROJ-123', events: [], criteria: [], bugs: [], regression: null, verdict: null, cycles: [], evidence: [],
+      pr: null, design: null, screen: { screen: 'launch' }, caption: 'Waiting for a device', mirror: 'device', awaiting: false, tab: 'find' };
+  }
+  S = fresh();
+
+  /* ---------- helpers ---------- */
+  const mmss = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  const usd = (c) => '$' + (c / 100).toFixed(2);
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT);
+    toastT = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+  function chip(kind) {
+    const m = {
+      running: ['run', '<span class="dot"></span>Running'], queued: ['mute', 'Queued'],
+      succeeded: ['ok', ic('check') + 'Succeeded'], escalated: ['warn', ic('alert') + 'Needs you'],
+      failed_environment: ['bad', ic('x') + 'Environment failure'], awaiting: ['warn', ic('alert') + 'Awaiting approval'],
+      cancelled: ['mute', 'Cancelled'],
+      GO: ['ok', ic('check') + 'GO'], CAV: ['warn', ic('alert') + 'GO with caveats'], NOGO: ['bad', ic('x') + 'NO-GO'], NONE: ['mute', 'None']
+    }[kind] || ['mute', kind];
+    return '<span class="chip ' + m[0] + '">' + m[1] + '</span>';
+  }
+
+  /* ---------- app screens (the "device") ---------- */
+  function screenHTML(st, variant) {
+    const r = variant === 'fig' ? 12 : 8;
+    const fig = variant === 'fig';
+    const spec = fig ? '<span class="spec" style="left:24px;top:' + (st.screen === 'launch' ? 366 : 300) + 'px">R 12</span>' : '';
+    let h = '';
+    if (st.screen === 'launch') {
+      h = '<div class="scr"><div class="a logo" style="top:110px">A</div>'
+        + '<div class="a center" style="top:190px"><h3>Acme</h3></div>'
+        + '<div class="a center mut" style="top:224px">Plan, book, and split trips.</div>'
+        + '<div class="a cta" style="top:380px;--r:' + r + 'px">Create account</div>'
+        + '<div class="a cta out" style="top:436px;--r:' + r + 'px">Log in</div>' + spec + '</div>';
+    } else if (st.screen === 'signup') {
+      const email = st.email ? esc(st.email) : '<span class="ph2">name@example.com</span>';
+      const pass = st.pass ? esc(st.pass) : '<span class="ph2">At least 8 characters</span>';
+      h = '<div class="scr"><div class="a" style="top:56px"><h3>Create account</h3></div>'
+        + '<div class="a mut" style="top:90px">Use your e-mail to get started.</div>'
+        + '<div class="a lab" style="top:128px">E-mail</div>'
+        + '<div class="a box' + (st.error ? ' bad' : '') + '" style="top:146px">' + email + '</div>'
+        + (st.error ? '<div class="a errt" style="top:194px">Enter a valid e-mail address.</div>' : '')
+        + '<div class="a lab" style="top:224px">Password</div>'
+        + '<div class="a box" style="top:242px">' + pass + '</div>'
+        + '<div class="a cta" style="top:316px;--r:' + r + 'px">Continue</div>'
+        + '<div class="a center mut" style="top:384px">Already have an account? Log in</div>' + spec + '</div>';
+    } else if (st.screen === 'crash') {
+      h = '<div class="scr crash"><div class="dlg"><h4>Acme keeps stopping</h4><div class="mut">The app closed because of a problem.</div>'
+        + '<div class="acts"><span>App info</span><span>Close app</span></div></div></div>';
+    } else if (st.screen === 'welcome') {
+      h = '<div class="scr"><div class="a okc" style="top:150px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>'
+        + '<div class="a center" style="top:240px"><h3>You are all set</h3></div>'
+        + '<div class="a center mut" style="top:274px">Account created for ana@acme.test</div>'
+        + '<div class="a cta" style="top:440px;--r:' + r + 'px">Continue</div></div>';
+    }
+    return h;
+  }
+  const phone = (st, variant, sc, label) =>
+    '<div><div class="pw" style="--sc:' + sc + '"><div class="phone ' + (variant === 'fig' ? 'fig' : 'dev') + '"><span class="cam"></span><div class="screen">' + screenHTML(st, variant) + '</div></div></div>'
+    + '<div class="pcap">' + label + '</div></div>';
+
+  function renderMirror() {
+    const st = S.screen, mv = S.mirror;
+    const stage = $('#stage');
+    stage.className = 'stage' + (mv === 'split' ? ' split' : '');
+    if (mv === 'device') stage.innerHTML = phone(st, 'dev', 1, 'Device (real build)');
+    else if (mv === 'fig') stage.innerHTML = phone(st, 'fig', 1, 'Figma frame 12:40');
+    else stage.innerHTML = phone(st, 'fig', .74, 'Figma') + phone(st, 'dev', .74, 'Device');
+    $('#caption').innerHTML = ic('dot') + '<span>' + esc(S.caption) + '</span>';
+  }
+  function tapAt(x, y) {
+    const scr = $('.phone.dev .screen'); if (!scr) return;
+    const el = document.createElement('span'); el.className = 'tap';
+    el.style.left = x + '%'; el.style.top = y + '%'; scr.appendChild(el);
+    setTimeout(() => el.remove(), 850);
+  }
+
+  /* ---------- header, meters, stepper ---------- */
+  function renderHeader() {
+    $('#rKey').textContent = S.key;
+    let k = S.status;
+    if (S.awaiting) k = 'awaiting';
+    $('#rStatus').innerHTML = chip(k) + (S.status === 'running' && !S.awaiting && S.step >= 0 ? ' <span class="note">' + esc(stepLabel(S.step)) + '</span>' : '');
+    const cyc = Math.max(S.cycle, 0), mins = Math.floor(S.elapsed / 60);
+    const m = (lbl, val, pct) => '<div class="meter"><div class="mt"><span>' + lbl + '</span><b>' + val + '</b></div><div class="bar" role="progressbar" aria-label="' + lbl + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(pct) + '"><i style="width:' + Math.min(100, pct) + '%"></i></div></div>';
+    $('#meters').innerHTML = m('Cycle', cyc + ' / ' + MAX.cycles, cyc / MAX.cycles * 100) + m('Time', mmss(S.elapsed) + ' of ' + MAX.minutes + ' min', mins / MAX.minutes * 100) + m('Spend', usd(S.cents) + ' of ' + usd(MAX.cents), S.cents / MAX.cents * 100);
+    $('#cancelBtn').disabled = !(S.status === 'running');
+    $('#crumb').innerHTML = S.view === 'run' ? '<a href="#runs" id="crumbRuns" style="color:var(--tx2);text-decoration:none">Runs</a> <span aria-hidden="true">/</span> <b>' + esc(S.key) + '</b>' : '<span>Runs</span>';
+    const cr = $('#crumbRuns'); if (cr) cr.addEventListener('click', (e) => { e.preventDefault(); go('home'); });
+  }
+  const stepLabel = (i) => (i === 2 && S.cycle > 1 ? 'Fix' : STEPS[i]);
+  function renderStepper() {
+    $('#stepper').innerHTML = STEPS.map((_, i) => {
+      const cls = i < S.step || S.status === 'succeeded' ? 'done' : i === S.step ? 'act' : '';
+      const num = cls === 'done' ? ic('check') : (i + 1);
+      return '<li class="' + cls + '"' + (cls === 'act' ? ' aria-current="step"' : '') + '><span class="n">' + num + '</span>' + stepLabel(i) + '</li>';
+    }).join('') + (S.cycle > 1 ? '<li class="cyc"><span class="chip info">Cycle ' + S.cycle + '</span></li>' : '');
+  }
+
+  /* ---------- activity ---------- */
+  function addEv(kind, title, detail) {
+    S.events.push({ t: S.elapsed, kind });
+    const li = document.createElement('li');
+    li.className = 'ev ' + kind;
+    const icn = { step: 'play', ok: 'check', bad: 'x', warn: 'alert', info: 'dot' }[kind] || 'dot';
+    li.innerHTML = '<time>' + mmss(S.elapsed) + '</time><svg class="ic eic" aria-hidden="true"><use href="#i-' + icn + '"></use></svg><div><b>' + esc(title) + '</b>' + (detail ? '<p>' + esc(detail) + '</p>' : '') + '</div>';
+    pushLi(li);
+  }
+  function addLog(text) {
+    const li = document.createElement('li'); li.className = 'lg'; li.textContent = text; pushLi(li);
+  }
+  function pushLi(li) {
+    const ul = $('#activity'); ul.appendChild(li);
+    if ($('#follow').checked) ul.scrollTop = ul.scrollHeight;
+  }
+
+  /* ---------- results panels ---------- */
+  const critChip = (s) => ({ pending: '<span class="chip mute">Pending</span>', pass: '<span class="chip ok">' + ic('check') + 'Pass</span>', fail: '<span class="chip bad">' + ic('x') + 'Fail</span>' }[s]);
+  function renderFindings() {
+    const v = S.verdict;
+    let h = '';
+    if (v) {
+      const cls = v.v === 'NO_GO' ? 'bad' : v.v === 'GO' ? 'ok' : 'warn';
+      const ttl = v.v === 'NO_GO' ? 'NO-GO' : v.v === 'GO' ? 'GO' : 'GO with caveats';
+      h += '<div class="banner ' + cls + '"><div class="bt">' + ic(v.v === 'NO_GO' ? 'x' : 'alert') + ttl + '<span class="note" style="margin-left:auto">Cycle ' + v.cycle + '</span></div><ul>' + v.reasons.map((r) => '<li>' + esc(r) + '</li>').join('') + '</ul><span class="note">The team makes the final release decision.</span></div>';
+    }
+    h += '<div><h2 style="margin-bottom:8px">Acceptance criteria</h2>';
+    h += S.criteria.length ? '<ul class="list">' + S.criteria.map((c) => '<li class="crit"><span class="id">' + c.id + '</span><p>' + esc(c.text) + '</p>' + critChip(c.st) + '</li>').join('') + '</ul>' : '<p class="empty">Criteria appear once the issue is read.</p>';
+    h += '</div><div><h2 style="margin-bottom:8px">Bugs</h2>';
+    h += S.bugs.length ? '<ul class="list">' + S.bugs.map((b) => '<li><details class="bug"' + (b.open ? ' open' : '') + '><summary><span class="sev ' + b.sev + '">' + b.sev + '</span><span><b style="font-weight:500">' + b.id + '</b> ' + esc(b.title) + '</span>' + (b.fixed ? '<span class="chip ok">' + ic('check') + 'Fixed in cycle ' + b.fixed + '</span>' : '<span class="chip mute">Open</span>') + '</summary><div class="bd"><h5>Steps</h5><ol>' + b.steps.map((s) => '<li>' + esc(s) + '</li>').join('') + '</ol><h5>Expected</h5><div>' + esc(b.expected) + '</div><h5>Actual</h5><div>' + esc(b.actual) + '</div><h5>Evidence</h5><div><code>' + esc(b.evidence) + '</code></div></div></details></li>').join('') + '</ul>' : '<p class="empty">No bugs found yet.</p>';
+    h += '</div>';
+    if (S.regression) {
+      h += '<div><h2 style="margin-bottom:8px">Regression</h2><table class="mini"><thead><tr><th scope="col">Flow</th><th scope="col">Critical</th><th scope="col">Status</th></tr></thead><tbody>'
+        + S.regression.map((f) => '<tr><td>' + f[0] + '</td><td>' + (f[1] ? 'Yes' : 'No') + '</td><td>' + critChip('pass') + '</td></tr>').join('') + '</tbody></table></div>';
+    }
+    $('#tp-find').innerHTML = h;
+    $('#cntF').textContent = S.bugs.length;
+  }
+  function renderDesign() {
+    const d = S.design;
+    let h = '<p class="note" style="margin:0">Design comparison is a visual judgment by the agent, not a pixel diff.</p>';
+    if (!d) { h += '<p class="empty">The comparison appears when the first screen is checked against Figma.</p>'; $('#tp-design').innerHTML = h; return; }
+    h += '<div class="cmp"><div class="cmpbox" id="cmpbox" style="--pos:50%"><div class="layer">' + screenHTML({ screen: 'signup' }, 'dev') + '</div><div class="layer top fig">' + screenHTML({ screen: 'signup' }, 'fig') + '</div><span class="hnd"></span></div>'
+      + '<div class="cmpl"><span>Figma</span><span>Device</span></div><label class="sr" for="cmpr">Comparison position</label><input id="cmpr" type="range" min="0" max="100" value="50"></div>'
+      + '<div><h2 style="margin-bottom:6px">Sign up · 12:40</h2><span class="chip info">Minor divergence</span><ul class="divs" style="margin-top:10px"><li>Continue button corner radius is 8 px, the design uses 12 px.</li></ul></div>';
+    $('#tp-design').innerHTML = h;
+    const r = $('#cmpr'); if (r) r.addEventListener('input', () => { $('#cmpbox').style.setProperty('--pos', r.value + '%'); });
+  }
+  function renderEvidence() {
+    $('#cntE').textContent = S.evidence.length;
+    if (!S.evidence.length) { $('#tp-evid').innerHTML = '<p class="empty">Screenshots, clips, and logs collect here as the run progresses.</p>'; return; }
+    $('#tp-evid').innerHTML = '<p class="note" style="margin:0">Media may contain personal data. Review before sharing.</p><div class="thumbs">' + S.evidence.map((e) => {
+      if (e.kind === 'shot') return '<figure><div class="thumb"><div class="screen">' + screenHTML(e.st, 'dev') + '</div></div><figcaption>' + esc(e.label) + '</figcaption></figure>';
+      return '<figure><div class="tile">' + ic(e.kind === 'video' ? 'film' : 'file') + '</div><figcaption>' + esc(e.label) + '</figcaption></figure>';
+    }).join('') + '</div>';
+  }
+  function renderReport() {
+    let h = '';
+    if (!S.cycles.length) { $('#tp-rep').innerHTML = '<p class="empty">The report is written when the first cycle ends.</p>'; return; }
+    h += '<div><h2 style="margin-bottom:8px">Cycle history</h2><table class="mini"><thead><tr><th scope="col">Cycle</th><th scope="col">Verdict</th><th scope="col">Fixed</th><th scope="col">Files</th><th scope="col">Time</th></tr></thead><tbody>'
+      + S.cycles.map((c) => '<tr><td>' + c.cycle + '</td><td>' + chip(c.v) + '</td><td>' + (c.fixed || 'None') + '</td><td class="num">' + c.files + '</td><td class="num">' + c.dur + '</td></tr>').join('') + '</tbody></table></div>';
+    if (S.awaiting || S.pr) {
+      h += '<div><h2 style="margin-bottom:8px">Points for human review</h2><ul class="divs"><li>BUG-02 (low): Continue button radius 8 px, design 12 px.</li><li>Implementer disagreements: none.</li><li>Guardrail warnings: none.</li><li>Evidence may contain personal data.</li></ul></div>';
+      if (S.pr) h += '<div class="banner ok"><div class="bt">' + ic('check') + 'Pull request opened</div><span class="pr mono" style="color:var(--tx)">' + ic('branch') + '#482 feature/PROJ-123 into main</span><span class="note">Opened by the control plane after your approval. The agent cannot merge.</span></div>';
+      else h += '<div class="actions"><button class="btn primary" id="repApprove" type="button">Approve and open PR</button><button class="btn" id="repChanges" type="button">Request changes</button></div>';
+    }
+    $('#tp-rep').innerHTML = h;
+    const a = $('#repApprove'); if (a) a.addEventListener('click', () => $('#approveDlg').showModal());
+    const c = $('#repChanges'); if (c) c.addEventListener('click', () => toast('Request changes sends your notes back to the run (not in this prototype).'));
+  }
+  const renderAll = () => { renderHeader(); renderStepper(); renderMirror(); renderFindings(); renderDesign(); renderEvidence(); renderReport(); };
+
+  /* ---------- scenario ---------- */
+  const tick = (sec, cents) => { S.elapsed += sec; S.cents += cents; renderHeader(); };
+  function setStep(i) { S.step = i; renderStepper(); renderHeader(); }
+  function screenTo(st, cap) { S.screen = st; if (cap) S.caption = cap; renderMirror(); }
+  function act(x, y, label, next, nextCap) {
+    const my = token;
+    S.caption = label; renderMirror(); tapAt(x, y);
+    addEv('info', label, '');
+    setTimeout(() => { if (my === token) screenTo(next, nextCap || label); }, 380 / S.speed);
+  }
+  const crit = (id, st) => { S.criteria.find((c) => c.id === id).st = st; renderFindings(); };
+  const shot = (label, st) => { S.evidence.push({ kind: 'shot', label, st: JSON.parse(JSON.stringify(st)) }); renderEvidence(); };
+  const BUG1 = { id: 'BUG-01', sev: 'blocking', title: 'App crashes when submitting the form with an empty e-mail', steps: ['Open Sign up', 'Leave the e-mail field empty', 'Tap Continue'], expected: 'Inline error under the e-mail field (Figma node 12:40).', actual: 'The app closes immediately.', evidence: 'bugs/BUG-01/step-04.png, clip.mp4, logcat.txt', open: true };
+  const BUG2 = { id: 'BUG-02', sev: 'low', title: 'Continue button corner radius differs from the design', steps: ['Open Sign up', 'Compare the Continue button with the Figma frame'], expected: 'Radius 12 px.', actual: 'Radius 8 px.', evidence: 'design/signup_figma-vs-real.png' };
+
+  const SC = [
+    [500, () => { S.status = 'running'; S.cycle = 0; setStep(0); addEv('step', 'Run started', 'Hosted runner android-02 leased the job'); addLog('$ git clone acme/acme-app --depth 1'); tick(8, 1); }],
+    [1000, () => { S.criteria = [{ id: 'AC-1', text: 'A user can create an account with a valid e-mail and password.', st: 'pending' }, { id: 'AC-2', text: 'An empty or invalid e-mail shows an inline error and does not submit.', st: 'pending' }]; renderFindings(); addEv('info', 'Read PROJ-123 (Jira)', '2 acceptance criteria extracted'); addEv('info', 'Read Figma frame 12:40', 'Sign up screen, 4 components'); tick(14, 2); }],
+    [1000, () => { setStep(1); addEv('step', 'Plan', 'plan.md: 3 files, 2 tests'); addLog('write qa-reports/PROJ-123/plan.md'); tick(20, 3); }],
+    [1100, () => { setStep(2); addEv('step', 'Implement', 'Branch feature/PROJ-123'); addLog('edit  app/.../SignupForm.kt'); addLog('edit  app/.../SignupViewModel.kt'); addLog('add   app/.../SignupViewModelTest.kt'); tick(70, 22); }],
+    [1100, () => { setStep(3); addEv('ok', 'Verify', 'Lint passed, 14 tests passed'); addEv('ok', 'Guardrails', 'guard check: no findings'); tick(35, 4); }],
+    [900, () => { setStep(4); addEv('ok', 'Build', 'assembleDebug succeeded in 38 s'); tick(40, 3); }],
+    [900, () => { S.cycle = 1; setStep(5); addEv('step', 'Validate (cycle 1)', 'mobile-qa started in an isolated workspace'); addLog('commit a1b2c3d feat(PROJ-123): sign-up validation [cycle 1]'); screenTo({ screen: 'launch' }, 'App launched on the emulator'); shot('launch', { screen: 'launch' }); tick(12, 2); }],
+    [1100, () => act(50, 75, 'Tap "Create account"', { screen: 'signup' }, 'Sign up screen')],
+    [1000, () => { screenTo({ screen: 'signup', email: 'ana@acme.test', pass: '••••••••' }, 'Typed a valid e-mail and password'); addEv('info', 'Typed e-mail and password', 'ana@acme.test'); tick(6, 1); }],
+    [1000, () => act(50, 63, 'Tap "Continue"', { screen: 'welcome' }, 'Account created')],
+    [900, () => { crit('AC-1', 'pass'); addEv('ok', 'AC-1 passed', 'Account created with a valid e-mail'); shot('AC-1 step-09', { screen: 'welcome' }); tick(10, 1); }],
+    [1100, () => { screenTo({ screen: 'launch' }, 'Relaunched with cleared data'); addEv('info', 'Relaunch app', 'Data cleared'); }],
+    [900, () => act(50, 75, 'Tap "Create account"', { screen: 'signup' }, 'Sign up screen (empty)')],
+    [1000, () => act(50, 63, 'Tap "Continue" with an empty e-mail', { screen: 'crash' }, 'The app stopped responding')],
+    [800, () => { addEv('bad', 'Crash detected', 'App closed after Continue with an empty e-mail'); addLog('E/AndroidRuntime: FATAL EXCEPTION: main'); addLog('E/AndroidRuntime: java.lang.NullPointerException: email'); S.bugs.push(JSON.parse(JSON.stringify(BUG1))); crit('AC-2', 'fail'); renderFindings(); shot('BUG-01 step-04', { screen: 'crash' }); S.evidence.push({ kind: 'video', label: 'clip.mp4' }, { kind: 'log', label: 'logcat.txt' }); renderEvidence(); tick(9, 1); }],
+    [1200, () => { screenTo({ screen: 'signup' }, 'Comparing Sign up with Figma 12:40'); S.design = { status: 'minor' }; renderDesign(); addEv('warn', 'Design comparison', 'Sign up: button radius 8 px vs 12 px (low)'); S.bugs.push(JSON.parse(JSON.stringify(BUG2))); renderFindings(); tick(15, 2); }],
+    [1000, () => { S.regression = [['login', true], ['home-navigation', true], ['logout', false]]; renderFindings(); addEv('ok', 'Regression', 'login, home-navigation, logout passed (3 of 3)'); tick(55, 4); }],
+    [1100, () => { S.verdict = { cycle: 1, v: 'NO_GO', reasons: ['Blocking bug BUG-01: crash with an empty e-mail', 'Acceptance criterion AC-2 failed'] }; renderFindings(); setStep(6); addEv('bad', 'Verdict: NO-GO', '1 blocking bug, AC-2 failed'); S.cycles.push({ cycle: 1, v: 'NOGO', fixed: '', files: 6, dur: '18 min' }); renderReport(); tick(4, 0); }],
+    [900, () => { addEv('info', 'Decision: fix', 'loop decide: fix BUG-01 (optional: BUG-02)'); tick(2, 0); }],
+    [1000, () => { S.cycle = 2; setStep(2); screenTo({ screen: 'launch' }, 'Fixing BUG-01 in code'); addEv('step', 'Fix (cycle 2)', 'BUG-01: null-safe e-mail validation and a test'); addLog('edit  app/.../SignupViewModel.kt'); addLog('add   test: empty e-mail shows error'); tick(60, 14); }],
+    [1100, () => { setStep(3); addEv('ok', 'Verify', 'Lint passed, 15 tests passed'); addEv('ok', 'Guardrails', 'guard check: no findings'); tick(30, 3); }],
+    [800, () => { setStep(4); addEv('ok', 'Build', 'assembleDebug succeeded in 31 s'); tick(34, 3); }],
+    [900, () => { setStep(5); addEv('step', 'Validate (cycle 2)', 'Fresh isolated workspace'); addLog('commit e4f5a6b fix(PROJ-123): resolve BUG-01 [cycle 2]'); screenTo({ screen: 'launch' }, 'App launched on the emulator'); tick(12, 2); }],
+    [1000, () => act(50, 75, 'Tap "Create account"', { screen: 'signup' }, 'Sign up screen (empty)')],
+    [1000, () => act(50, 63, 'Tap "Continue" with an empty e-mail', { screen: 'signup', error: true }, 'Inline error is shown')],
+    [900, () => { crit('AC-2', 'pass'); const b = S.bugs.find((x) => x.id === 'BUG-01'); b.fixed = 2; b.open = false; renderFindings(); addEv('ok', 'AC-2 passed', 'Inline error shown, form not submitted'); shot('AC-2 step-05', { screen: 'signup', error: true }); tick(10, 1); }],
+    [1000, () => { addEv('ok', 'Regression', 'login, home-navigation, logout passed (3 of 3)'); tick(52, 4); }],
+    [1100, () => { S.verdict = { cycle: 2, v: 'GO_WITH_CAVEATS', reasons: ['All acceptance criteria passed', 'Regression passed on all critical flows', 'One low-severity design divergence remains (BUG-02)'] }; renderFindings(); setStep(6); addEv('warn', 'Verdict: GO with caveats', '1 low bug remains'); S.cycles.push({ cycle: 2, v: 'CAV', fixed: 'BUG-01', files: 2, dur: '14 min' }); tick(4, 0); }],
+    [900, () => { addEv('info', 'Decision: deliver', 'loop decide: deliver'); setStep(7); S.awaiting = true; S.status = 'running'; addEv('warn', 'Approval requested', 'Open the pull request for feature/PROJ-123?'); S.caption = 'Waiting for your approval'; renderAll(); activate('rep'); $('#approveDlg').showModal(); }],
+  ];
+
+  async function play() {
+    const my = ++token;
+    for (const [d, fn] of SC) {
+      await sleep(d / S.speed);
+      if (my !== token) return;
+      fn();
+    }
+  }
+
+  /* ---------- views ---------- */
+  function go(view) {
+    S.view = view;
+    $('#viewHome').hidden = view !== 'home';
+    $('#viewRun').hidden = view !== 'run';
+    renderHeader(); renderRows();
+    window.scrollTo(0, 0);
+  }
+  const ROWS = [
+    ['PROJ-118', 'Profile avatar upload', 'succeeded', '1/3', 'GO', '17 min', '$2.40', 'Yesterday'],
+    ['PROJ-121', 'Dark mode toggle in settings', 'escalated', '3/3', 'NOGO', '52 min', '$6.85', 'Yesterday'],
+    ['PROJ-109', 'Push notification opt-in', 'failed_environment', '0/3', 'NONE', '6 min', '$0.30', 'Mon'],
+    ['PROJ-104', 'Order history empty state', 'succeeded', '2/3', 'CAV', '31 min', '$4.10', 'Mon'],
+  ];
+  function renderRows() {
+    let h = '';
+    if (S.running || S.status !== 'queued') {
+      const k = S.pr ? 'succeeded' : S.awaiting ? 'awaiting' : S.status === 'cancelled' ? 'cancelled' : 'running';
+      const v = S.verdict ? (S.verdict.v === 'NO_GO' ? 'NOGO' : S.verdict.v === 'GO' ? 'GO' : 'CAV') : 'NONE';
+      h += '<tr class="live"><td><span class="key">' + esc(S.key) + '</span><br><button class="rowlink" type="button" id="openLive">Sign-up form: inline validation</button></td><td>acme-app</td><td>' + chip(k) + '</td><td class="num">' + Math.max(S.cycle, 0) + '/3</td><td>' + chip(v) + '</td><td class="num">' + mmss(S.elapsed) + '</td><td class="num">' + usd(S.cents) + '</td><td class="num">Now</td></tr>';
+    }
+    h += ROWS.map((r) => '<tr title="Sample row. Only the live run opens in this prototype."><td><span class="key">' + r[0] + '</span><br><span class="ttl">' + r[1] + '</span></td><td>acme-app</td><td>' + chip(r[2]) + '</td><td class="num">' + r[3] + '</td><td>' + chip(r[4]) + '</td><td class="num">' + r[5] + '</td><td class="num">' + r[6] + '</td><td class="num">' + r[7] + '</td></tr>').join('');
+    $('#runRows').innerHTML = h;
+    const o = $('#openLive'); if (o) o.addEventListener('click', () => go('run'));
+  }
+  function activate(name) {
+    S.tab = name;
+    ['find', 'design', 'evid', 'rep'].forEach((n) => {
+      const on = n === name;
+      const b = $('#tb-' + n), p = $('#tp-' + n);
+      b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; p.hidden = !on;
+    });
+  }
+
+  /* ---------- link detection ---------- */
+  function detect(raw, kind) {
+    if (!raw.trim()) return { ok: false, html: '<span class="chip mute">Empty</span>' };
+    let u; try { u = new URL(raw.trim()); } catch (e) { return { ok: false, html: '<span class="chip bad">' + ic('x') + 'Not a valid link</span>' }; }
+    const h = u.hostname.toLowerCase();
+    if (kind === 'task') {
+      if (h.endsWith('atlassian.net') || u.pathname.includes('/browse/')) return { ok: true, html: '<span class="chip ok">' + ic('check') + 'Jira</span><span>Issue ' + esc((u.pathname.match(/[A-Z][A-Z0-9]+-\d+/) || ['detected'])[0]) + '</span>' };
+      if (h.endsWith('trello.com')) return { ok: true, html: '<span class="chip info">Trello</span><span>Connector arrives in v1.1</span>' };
+      if (h.endsWith('dev.azure.com') || h.endsWith('visualstudio.com')) return { ok: true, html: '<span class="chip info">Azure DevOps</span><span>Connector arrives in v1.1</span>' };
+      return { ok: false, html: '<span class="chip bad">' + ic('x') + 'Unrecognized tracker</span><span>Use a Jira, Trello, or Azure DevOps link</span>' };
+    }
+    if (h.endsWith('figma.com')) return { ok: true, html: '<span class="chip ok">' + ic('check') + 'Figma</span><span>' + esc(u.searchParams.get('node-id') ? 'Frame ' + u.searchParams.get('node-id').replace('-', ':') : 'File') + '</span>' };
+    if (h.endsWith('adobe.com')) return { ok: false, html: '<span class="chip bad">' + ic('x') + 'Adobe XD not supported</span><span>XD is in maintenance mode. Use Figma.</span>' };
+    return { ok: false, html: '<span class="chip bad">' + ic('x') + 'Unrecognized design tool</span><span>Use a Figma link</span>' };
+  }
+  function runDetect() {
+    $('#taskDetect').innerHTML = detect($('#taskUrl').value, 'task').html;
+    $('#designDetect').innerHTML = detect($('#designUrl').value, 'design').html;
+  }
+
+  /* ---------- actions ---------- */
+  function startRun() {
+    const t = detect($('#taskUrl').value, 'task'), d = detect($('#designUrl').value, 'design');
+    const err = $('#formErr'); err.textContent = '';
+    $('#taskUrl').setAttribute('aria-invalid', !t.ok); $('#designUrl').setAttribute('aria-invalid', !d.ok);
+    if (!t.ok) { err.textContent = 'The task link is not supported. Use a Jira link in this prototype.'; $('#taskUrl').focus(); return; }
+    if (!d.ok) { err.textContent = 'The design link is not supported. Use a Figma link.'; $('#designUrl').focus(); return; }
+    const key = ($('#taskUrl').value.match(/[A-Z][A-Z0-9]+-\d+/) || ['PROJ-123'])[0];
+    const spd = S.speed;
+    token++; S = fresh(); S.speed = spd; S.key = key; S.running = true; S.status = 'queued';
+    $('#activity').innerHTML = '';
+    $$('input[name="spd"]').forEach((r) => { r.checked = r.value === String(S.speed); });
+    $$('input[name="mv"]').forEach((r) => { r.checked = r.value === 'device'; });
+    activate('find');
+    renderAll(); go('run');
+    S.caption = 'Waiting for a runner'; renderMirror();
+    play();
+  }
+  function cancelRun() {
+    token++; S.status = 'cancelled'; S.running = false; S.awaiting = false;
+    addEv('bad', 'Run cancelled', 'Runner stopped and workspace wiped'); S.caption = 'Run cancelled'; renderAll(); renderRows();
+  }
+  function resetDemo() {
+    token++; const spd = S.speed; S = fresh(); S.speed = spd;
+    $('#activity').innerHTML = ''; renderAll(); go('home'); toast('Demo reset');
+  }
+  function approve() {
+    $('#approveDlg').close();
+    S.awaiting = false; S.pr = { n: 482 }; S.status = 'succeeded'; S.running = false;
+    addEv('ok', 'Pull request opened', '#482 feature/PROJ-123 into main (opened by the control plane)');
+    S.caption = 'Pull request opened'; renderAll(); renderRows();
+  }
+
+  /* ---------- command palette ---------- */
+  const CMDS = [
+    { l: 'New run', k: 'N', f: () => { go('home'); setTimeout(() => $('#taskUrl').focus(), 0); } },
+    { l: 'Go to Runs', k: '', f: () => go('home') },
+    { l: 'Open live run', k: '', f: () => { if (S.status !== 'queued') go('run'); else toast('Start a run first'); } },
+    { l: 'Mirror: Device view', k: '', f: () => setMirror('device') },
+    { l: 'Mirror: Figma view', k: '', f: () => setMirror('fig') },
+    { l: 'Mirror: Split view', k: '', f: () => setMirror('split') },
+    { l: 'Playback speed 1x', k: '', f: () => setSpeed(1) },
+    { l: 'Playback speed 4x', k: '', f: () => setSpeed(4) },
+    { l: 'Reset demo', k: '', f: resetDemo },
+  ];
+  let cmdSel = 0, cmdList = CMDS;
+  function renderCmd() {
+    $('#cmdList').innerHTML = cmdList.map((c, i) => '<li role="option" id="cmd' + i + '" aria-selected="' + (i === cmdSel) + '" data-i="' + i + '">' + esc(c.l) + (c.k ? '<small>' + c.k + '</small>' : '') + '</li>').join('') || '<li class="empty">No matching command</li>';
+    $('#cmdInput').setAttribute('aria-activedescendant', cmdList.length ? 'cmd' + cmdSel : '');
+  }
+  function openCmd() { const d = $('#cmdk'); if (d.open) return; $('#cmdInput').value = ''; cmdList = CMDS; cmdSel = 0; renderCmd(); d.showModal(); $('#cmdInput').focus(); }
+  function runCmd(i) { const c = cmdList[i]; if (!c) return; $('#cmdk').close(); c.f(); }
+  function setMirror(v) { S.mirror = v; $$('input[name="mv"]').forEach((r) => { r.checked = r.value === v; }); renderMirror(); }
+  function setSpeed(v) { S.speed = v; $$('input[name="spd"]').forEach((r) => { r.checked = r.value === String(v); }); }
+
+  /* ---------- wiring ---------- */
+  $('#runBtn').addEventListener('click', startRun);
+  $('#newRunTop').addEventListener('click', () => { go('home'); $('#taskUrl').focus(); });
+  $('#openCmd').addEventListener('click', openCmd);
+  $('#cancelBtn').addEventListener('click', cancelRun);
+  $('#resetBtn').addEventListener('click', resetDemo);
+  $('#apYes').addEventListener('click', approve);
+  $('#apNo').addEventListener('click', () => { $('#approveDlg').close(); toast('You can approve later from the Report tab.'); });
+  $('#taskUrl').addEventListener('input', runDetect);
+  $('#designUrl').addEventListener('input', runDetect);
+  $('#navRuns').addEventListener('click', (e) => { e.preventDefault(); go('home'); });
+  $$('.nav a[data-stub]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); toast(a.dataset.stub + ' is not part of this prototype.'); }));
+  $$('input[name="spd"]').forEach((r) => r.addEventListener('change', () => { S.speed = Number(r.value); }));
+  $$('input[name="mv"]').forEach((r) => r.addEventListener('change', () => setMirror(r.value)));
+  $$('.tabs button').forEach((b) => b.addEventListener('click', () => activate(b.id.replace('tb-', ''))));
+  $('.tabs').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const order = ['find', 'design', 'evid', 'rep'];
+    const i = order.indexOf(S.tab), n = (i + (e.key === 'ArrowRight' ? 1 : order.length - 1)) % order.length;
+    activate(order[n]); $('#tb-' + order[n]).focus();
+  });
+  $('#cmdInput').addEventListener('input', (e) => { const q = e.target.value.toLowerCase(); cmdList = CMDS.filter((c) => c.l.toLowerCase().includes(q)); cmdSel = 0; renderCmd(); });
+  $('#cmdInput').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); cmdSel = Math.min(cmdSel + 1, cmdList.length - 1); renderCmd(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); cmdSel = Math.max(cmdSel - 1, 0); renderCmd(); }
+    else if (e.key === 'Enter') { e.preventDefault(); runCmd(cmdSel); }
+  });
+  $('#cmdList').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) runCmd(Number(li.dataset.i)); });
+  document.addEventListener('keydown', (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmd(); return; }
+    if (mod && e.key === 'Enter' && S.view === 'home') { e.preventDefault(); startRun(); return; }
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'select' || tag === 'textarea' || mod || e.altKey) return;
+    if (e.key === 'n' && !document.querySelector('dialog[open]')) { e.preventDefault(); go('home'); $('#taskUrl').focus(); }
+  });
+
+  runDetect(); renderAll(); renderRows();
+})();
+</script>
+
+</body>
+</html>

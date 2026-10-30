@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "issue": "PROJ-123",
+  "figma_url": "https://www.figma.com/design/EXAMPLEKEY/Signup-flow?node-id=12-40",
+  "acceptance_criteria": [
+    { "id": "AC-1", "text": "A user can create an account with a valid e-mail and password." },
+    { "id": "AC-2", "text": "An empty or invalid e-mail shows an inline error and does not submit." }
+  ],
+  "platform": "android",
+  "target": "emulator",
+  "device": "Pixel_8_API_35",
+  "build_path": "./build/app-debug.apk",
+  "cycle": 1,
+  "mode": "validate_and_regress",
+  "flows": [],
+  "output_dir": "./qa-reports/PROJ-123/cycle-1",
+  "timeouts": { "step_seconds": 20, "run_minutes": 30 }
+}

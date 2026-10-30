@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "platforms": ["android", "ios"],
+  "targets": { "android": "emulator", "ios": "simulator" },
+  "app": {
+    "android_package": "com.example.app",
+    "ios_bundle_id": "com.example.app",
+    "android_build_path": "./app/build/outputs/apk/debug/app-debug.apk",
+    "ios_build_path": "./build/Debug-iphonesimulator/App.app"
+  },
+  "sources": {
+    "design": "figma",
+    "tracker": { "type": "jira", "project_key": "PROJ", "write": "ask" }
+  },
+  "recording": { "android": "scrcpy", "ios": "simctl" },
+  "blocking_rules": ["crash", "critical_flow_broken", "acceptance_criterion_failed", "regression_in_critical_flow"],
+  "critical_flows": ["login", "signup", "checkout"],
+  "output_dir": "./qa-reports",
+  "implementer": {
+    "base_branch": "main",
+    "branch_prefix": "feature/",
+    "commands": {
+      "lint": "npm run lint",
+      "test": "npm test",
+      "build_android": "./gradlew assembleDebug",
+      "build_ios": "xcodebuild -scheme App -sdk iphonesimulator -configuration Debug build"
+    },
+    "limits": {
+      "max_cycles": 3,
+      "max_files_changed": 20,
+      "allowed_paths": ["src/", "app/", "test/"],
+      "cycle_timeout_minutes": 30,
+      "max_same_bug_repeats": 2
+    },
+    "open_pr": "ask"
+  }
+}

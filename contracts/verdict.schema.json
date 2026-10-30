@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qa-mobile-agent:schema:verdict:1",
+  "title": "QA Verdict",
+  "description": "Output of the mobile-qa skill for one validation cycle. Single source of truth for the release gate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "issue", "cycle", "generated_at", "verdict", "environment", "criteria", "bugs", "regression"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "issue": { "type": "string", "minLength": 1, "description": "Tracker issue key or id, e.g. PROJ-123." },
+    "cycle": { "type": "integer", "minimum": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "verdict": { "enum": ["GO", "GO_WITH_CAVEATS", "NO_GO"] },
+    "verdict_reasons": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Human-readable reasons, one per rule that influenced the verdict."
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "target"],
+      "properties": {
+        "platform": { "enum": ["android", "ios"] },
+        "target": { "enum": ["simulator", "emulator", "physical", "cloud"] },
+        "device": { "type": "string" },
+        "os_version": { "type": "string" },
+        "app_version": { "type": "string" },
+        "build_id": { "type": "string" }
+      }
+    },
+    "criteria": { "type": "array", "items": { "$ref": "#/$defs/criterion" } },
+    "bugs": { "type": "array", "items": { "$ref": "#/$defs/bug" } },
+    "regression": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "failed", "skipped", "flows"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "flows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "critical", "status"],
+            "properties": {
+              "name": { "type": "string" },
+              "critical": { "type": "boolean" },
+              "status": { "enum": ["pass", "fail", "skipped"] },
+              "video": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "design_comparison": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["screen", "status"],
+        "properties": {
+          "screen": { "type": "string" },
+          "figma_node": { "type": "string" },
+          "status": { "enum": ["match", "minor_divergence", "major_divergence", "not_compared"] },
+          "divergences": { "type": "array", "items": { "type": "string" } },
+          "side_by_side": { "type": "string", "description": "Relative path to the comparison image." }
+        }
+      }
+    },
+    "evidence_dir": { "type": "string" }
+  },
+  "$defs": {
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "status": { "enum": ["pass", "fail", "blocked", "not_testable"] },
+        "bug_ids": { "type": "array", "items": { "type": "string", "pattern": "^BUG-[0-9]{2,}$" } },
+        "evidence": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "bug": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "severity", "title", "steps", "expected", "actual", "regression"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^BUG-[0-9]{2,}$" },
+        "fingerprint": {
+          "type": "string",
+          "description": "Stable hash of normalized title + steps. Lets the implementer detect the same bug reappearing across cycles."
+        },
+        "severity": { "enum": ["blocking", "high", "medium", "low"] },
+        "title": { "type": "string", "minLength": 3 },
+        "steps": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "expected": { "type": "string" },
+        "actual": { "type": "string" },
+        "criterion_ids": { "type": "array", "items": { "type": "string" } },
+        "regression": { "type": "boolean", "description": "True when the behavior worked in the last approved run." },
+        "flow": { "type": "string" },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "log": { "type": "string" }
+      }
+    }
+  }
+}

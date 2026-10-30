@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qa-mobile-agent:schema:config:1",
+  "title": ".mobile-qa/config.json",
+  "description": "Project configuration written by `qa-mobile-agent init`. Never contains secrets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "platforms", "targets", "app", "sources", "recording", "blocking_rules", "critical_flows", "output_dir"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "platforms": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["android", "ios"] } },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "android": { "enum": ["emulator", "physical", "cloud"] },
+        "ios": { "enum": ["simulator", "physical", "cloud"] }
+      }
+    },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "android_package": { "type": "string" },
+        "ios_bundle_id": { "type": "string" },
+        "android_build_path": { "type": "string" },
+        "ios_build_path": { "type": "string" }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["design"],
+      "properties": {
+        "design": { "enum": ["figma", "none"] },
+        "tracker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "enum": ["jira", "trello", "azure_devops", "none"] },
+            "project_key": { "type": "string" },
+            "write": { "enum": ["never", "ask", "always"], "default": "ask" }
+          }
+        }
+      }
+    },
+    "recording": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "android": { "enum": ["scrcpy", "screenrecord", "none"] },
+        "ios": { "enum": ["simctl", "none"] }
+      }
+    },
+    "blocking_rules": {
+      "type": "array",
+      "items": { "enum": ["crash", "critical_flow_broken", "acceptance_criterion_failed", "data_loss", "security_issue", "regression_in_critical_flow"] }
+    },
+    "critical_flows": { "type": "array", "items": { "type": "string" } },
+    "output_dir": { "type": "string" },
+    "implementer": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Present only when the feature-implementer skill is installed.",
+      "properties": {
+        "base_branch": { "type": "string" },
+        "branch_prefix": { "type": "string" },
+        "commands": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lint": { "type": "string" },
+            "test": { "type": "string" },
+            "build_android": { "type": "string" },
+            "build_ios": { "type": "string" }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_cycles": { "type": "integer", "minimum": 1, "default": 3 },
+            "max_files_changed": { "type": "integer", "minimum": 1, "default": 20 },
+            "allowed_paths": { "type": "array", "items": { "type": "string" } },
+            "cycle_timeout_minutes": { "type": "integer", "minimum": 1, "default": 30 },
+            "max_same_bug_repeats": { "type": "integer", "minimum": 1, "default": 2 }
+          }
+        },
+        "open_pr": { "enum": ["never", "ask", "always"], "default": "ask" }
+      }
+    }
+  }
+}

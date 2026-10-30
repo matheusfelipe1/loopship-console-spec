@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "issue": "PROJ-123",
+  "branch": "feature/PROJ-123",
+  "started_at": "2026-10-29T14:40:00Z",
+  "finished_at": "2026-10-29T16:12:00Z",
+  "plan_path": "./qa-reports/PROJ-123/plan.md",
+  "cycles": [
+    {
+      "cycle": 1,
+      "commit": "a1b2c3d",
+      "verdict": "NO_GO",
+      "bugs_fixed": [],
+      "bugs_open": ["BUG-01", "BUG-02"],
+      "files_changed": 6,
+      "duration_seconds": 2400,
+      "verdict_path": "./qa-reports/PROJ-123/cycle-1/verdict.json"
+    },
+    {
+      "cycle": 2,
+      "commit": "e4f5a6b",
+      "verdict": "GO_WITH_CAVEATS",
+      "bugs_fixed": ["BUG-01"],
+      "bugs_open": ["BUG-02"],
+      "files_changed": 2,
+      "duration_seconds": 1900,
+      "verdict_path": "./qa-reports/PROJ-123/cycle-2/verdict.json"
+    }
+  ],
+  "final_status": "pr_opened",
+  "pr_url": "https://github.com/example/app/pull/482",
+  "disagreements": []
+}
